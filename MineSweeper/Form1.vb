@@ -1,68 +1,150 @@
 ﻿Public Class Form1
-    Private MineMap(,), TempMineMap(,), IslandNum, IslandPointNum, MineNum,
-        MineNumLeft, MineNumLeftDisplay, MineMapHeight, MineMapWidth As Integer
+    Private IslandNum, IslandPointNum, MineNumLeft, MineNumLeftDisplay As Integer
+    Private PanelWidth, PanelHeight, FormWidth, FormHeight As Integer
+    Private CellSize As Integer
     Private FirstClick As Boolean = False
-    Private SingleIslandMap(,) As Integer
+    Private MyButtons(,) As Button
+    Private MineMap(,), TempMineMap(,), SingleIslandMap(,) As Integer
     Private IslandMap As New Dictionary(Of Integer, Integer(,))
-    Private ImageMine As New Bitmap("mine.png")
-    Private ImageHighlight As New Bitmap("mine highlighted.png")
-    Private ImageFlag As New Bitmap("flag.png")
-    Private ImageNormal As New Bitmap("face normal.jpeg")
-    Private ImageSuccess As New Bitmap("face success.jpeg")
-    Private ImageFailure As New Bitmap("face failure.jpeg")
+    Private ImageMine, ImageHighlight, ImageFlag,
+            ImageNormal, ImageSuccess, ImageFailure As Bitmap
 
     Private Sub Button_Start_Click(sender As Object, e As EventArgs) Handles Button_Start.Click
-        'initialize everything
-        Form1_Load(sender, e)
+        'RESET
+        Reset_All_Parameters()
     End Sub
 
     Private Sub Button_Exit_Click(sender As Object, e As EventArgs) Handles Button_Exit.Click
-        'exit
+        'EXIT
         End
     End Sub
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        'load mine image
-        ImageMine = New Bitmap(ImageMine, Button1.Width, Button1.Height)
-        ImageHighlight = New Bitmap(ImageHighlight, Button1.Width, Button1.Height)
-        ImageFlag = New Bitmap(ImageFlag, Button1.Width, Button1.Height)
+        'initialize all constant parameters
+        Set_Constant_Parameters()
 
-        'initialize mine map
-        MineNum = 15
-        MineMapHeight = 12
-        MineMapWidth = 8
-        MineNumLeft = MineNum
-        MineNumLeftDisplay = MineNum
-        ReDim MineMap(MineMapWidth - 1, MineMapHeight - 1)
+        'initialize user interface
+        Init_UI()
 
-        'initialize all buttons
-        InitAllButton()
+        'initialize all buttons event
+        Init_Button_Move_Event()
+        Init_Button_Click_Event()
 
         'generate the whole mine distribution
-        'Init_Mine_Map()
+        'Set_Mine_Map()
 
-        'initialize face
+        'reset all parameters
+        Reset_All_Parameters()
+    End Sub
+
+    Private Sub Init_UI()
+        'INITIALIZE USER INTERFACE
+
+        'initialize mine map
+        Init_Mine_Map()
+
+        'initialize images
+        Init_Image()
+
+        'set user interface
+        Set_UI_Distribution()
+    End Sub
+
+    Private Sub Init_Mine_Map()
+        ' INITIALIZE WINDOW AND MINE MAP DISTRIBUTION
+        Dim ColNum, RowNum As Integer
+
+        ' set panel size
+        ColNum = MineMapWidth
+        RowNum = MineMapHeight
+        CellSize = 20
+        PanelWidth = ColNum * CellSize
+        PanelHeight = RowNum * CellSize
+        Panel1.Size = New Size(PanelWidth, PanelHeight)
+
+        ' set form size
+        FormWidth = PanelWidth + 300
+        FormHeight = PanelHeight + 300
+        Me.Size = New Size(FormWidth, FormHeight)
+        Me.CenterToScreen()
+
+        ' set center alignment of the panel
+        Panel1.Location = New Point((FormWidth - PanelWidth) / 2,
+                                    (FormHeight - PanelHeight) / 2)
+
+        ' add button on the panel
+        ReDim MyButtons(ColNum, RowNum)
+        For i As Integer = 0 To ColNum - 1
+            For j As Integer = 0 To RowNum - 1
+                Dim MyButton As Button = New Button
+                MyButton.Size = New Size(CellSize, CellSize)
+                MyButton.Location = New Point(i * CellSize, j * CellSize)
+                MyButton.Name = "Button" + "_" + CStr(i) + "_" + CStr(j)
+                Panel1.Controls.Add(MyButton)
+                MyButtons(i, j) = MyButton
+            Next
+        Next
+    End Sub
+
+    Private Sub Init_Image()
+        'INITIALIZE ALL IMAGE VARIABLES
+
+        'initialize mine button image
+        ImageMine = New Bitmap(New Bitmap(ImageFileMine), CellSize, CellSize)
+        ImageFlag = New Bitmap(New Bitmap(ImageFileFlag), CellSize, CellSize)
+        ImageHighlight = New Bitmap(New Bitmap(ImageFileHighlight), CellSize, CellSize)
+
+        'initialize face image
+        ImageNormal = New Bitmap(ImageFileNormal)
+        ImageSuccess = New Bitmap(ImageFileSuccess)
+        ImageFailure = New Bitmap(ImageFileFailure)
+    End Sub
+
+    Private Sub Set_UI_Distribution()
+        'SET UP USER INTERFACE DISTRIBUTION
+
+        'title label
+        Label1.Text = "MineSweeper V2.0"
+        Label1.Location = New Point((FormWidth - Label1.Width) / 2, 0)
+
+        'notification face
         PictureBox1.Image = ImageNormal
         PictureBox1.SizeMode = 1
+        PictureBox1.Location = New Point((FormWidth - PictureBox1.Width) / 2, Label1.Location.Y + 50)
 
+        'mine Status
+        Label2.Location = New Point((FormWidth - Label2.Width) / 2, PictureBox1.Location.Y + 50)
+
+        'start button
+        Button_Start.Location = New Point(50, FormHeight - Button_Start.Height - 50)
+
+        'exit button
+        Button_Exit.Location = New Point(FormWidth - Button_Exit.Width - 50, FormHeight - Button_Exit.Height - 50)
+    End Sub
+
+    Private Sub Reset_All_Parameters()
+        'RESET ALL PARAMETERS
         'initialize first mine click marker
         FirstClick = False
 
-        'initialize mine recorder
+        'reset mine recorder
+        MineNumLeft = MineNum
+        MineNumLeftDisplay = MineNum
         Label2.Text = CStr(MineNum) & "/" & CStr(MineNum)
 
-        'distribute mine in the mine map
-        'ShowAllMine()
+        'reset all buttons
+        Reset_All_Button()
 
-        'distribute mine marker number in the mine map
-        'ShowAllMineMarker()
+        'reset mine map
+        ReDim MineMap(MineMapWidth - 1, MineMapHeight - 1)
+
+
     End Sub
 
     'generate the whole distribution
-    Private Sub Init_Mine_Map(ByVal X0 As Integer, Y0 As Integer)
-        ' generate mine
+    Private Sub Set_Mine_Map(ByVal X0 As Integer, Y0 As Integer)
+        ' DISTRIBUTE MINE MAP
         Dim MineX, MineY As Integer ' position of the current mine
-        Dim i, j As Integer
         Dim MineNumeAround As Integer
         Dim MineNumNow As Integer = MineNum
 
@@ -83,8 +165,8 @@
         End While
 
         'initialize mine marker number in the mine map
-        For i = 0 To MineMapWidth - 1
-            For j = 0 To MineMapHeight - 1
+        For i As Integer = 0 To MineMapWidth - 1
+            For j As Integer = 0 To MineMapHeight - 1
 
                 If MineMap(i, j) <> -1 Then
                     'reset MineNumeAround
@@ -154,26 +236,22 @@
             Next
         Next
 
-        ' get island map
+        ' initialize island map
         GetEmptyIsland()
     End Sub
 
     ' distribute mine
     Private Sub ShowAllMine()
-        Dim i, j As Integer
-        Dim MyButton As Button
+        ' DISPLAY ALL MINE
 
         'setup mine 
-        For i = 0 To MineMapWidth - 1
-            For j = 0 To MineMapHeight - 1
-                'locate current button
-                MyButton = GetButton(i, j)
-
+        For i As Integer = 0 To MineMapWidth - 1
+            For j As Integer = 0 To MineMapHeight - 1
                 'setup image(mine, number or empty zone)
                 If MineMap(i, j) = -1 Then
-                    MyButton.Image = ImageMine
+                    MyButtons(i, j).Image = ImageMine
                 ElseIf MineMap(i, j) = 0 Then
-                    MyButton.Image = Nothing
+                    MyButtons(i, j).Image = Nothing
                 End If
             Next
         Next
@@ -181,56 +259,61 @@
 
     ' distribute mine marker number
     Private Sub ShowAllMineMarker()
-        Dim i, j As Integer
-        Dim MyButton As Button
+        ' DISPLAY ALL MINE NUMBER MARKER
 
         'setup mine marker number
-        For i = 0 To MineMapWidth - 1
-            For j = 0 To MineMapHeight - 1
-                'locate current button
-                MyButton = GetButton(i, j)
+        For i As Integer = 0 To MineMapWidth - 1
+            For j As Integer = 0 To MineMapHeight - 1
 
-                'setup image(mine, number or empty zone)
+                'setup image(mine, number marker or empty zone)
                 If MineMap(i, j) > 0 Then
-                    Set_Button_Mine_Marker(MyButton, MineMap(i, j))
+                    Set_Button_Mine_Marker(MyButtons(i, j), MineMap(i, j))
+
                 ElseIf MineMap(i, j) = -9 Then
-                    MyButton.Text = ""
-                    MyButton.Enabled = False
+                    MyButtons(i, j).Text = ""
+                    MyButtons(i, j).Enabled = False
                 End If
             Next
         Next
     End Sub
 
-    ' locate the current button via row and column
-    Private Function GetButton(ByVal ColNow, RowNow) As Button
-        ' GET BUTTON AND THE DEFAUlT NAME(BUTTON1, BUTTON2, etc.)
-        Dim ButtonName As String
-        Dim ButtonIndex As Integer
-        ButtonIndex = ColNow + 1 + RowNow * 8
-        ButtonName = "Button" + CStr(ButtonIndex)
-        Return CType(Me.Controls(ButtonName), Button)
-    End Function
+    Private Sub Init_Button_Move_Event()
+        ' ADD ALL MINE BUTTON MOVE EVENT
+        For i As Integer = 0 To MineMapWidth - 1
+            For j As Integer = 0 To MineMapHeight - 1
+                AddHandler MyButtons(i, j).MouseMove, AddressOf Button_MouseMove
+            Next
+        Next
+    End Sub
 
-
-    Private Sub Button_MouseMove(sender As Object, e As MouseEventArgs) Handles Button96.MouseMove, Button95.MouseMove, Button94.MouseMove, Button93.MouseMove, Button92.MouseMove, Button91.MouseMove, Button90.MouseMove, Button9.MouseMove, Button89.MouseMove, Button88.MouseMove, Button87.MouseMove, Button86.MouseMove, Button85.MouseMove, Button84.MouseMove, Button83.MouseMove, Button82.MouseMove, Button81.MouseMove, Button80.MouseMove, Button8.MouseMove, Button79.MouseMove, Button78.MouseMove, Button77.MouseMove, Button76.MouseMove, Button75.MouseMove, Button74.MouseMove, Button73.MouseMove, Button72.MouseMove, Button71.MouseMove, Button70.MouseMove, Button7.MouseMove, Button69.MouseMove, Button68.MouseMove, Button67.MouseMove, Button66.MouseMove, Button65.MouseMove, Button64.MouseMove, Button63.MouseMove, Button62.MouseMove, Button61.MouseMove, Button60.MouseMove, Button6.MouseMove, Button59.MouseMove, Button58.MouseMove, Button57.MouseMove, Button56.MouseMove, Button55.MouseMove, Button54.MouseMove, Button53.MouseMove, Button52.MouseMove, Button51.MouseMove, Button50.MouseMove, Button5.MouseMove, Button49.MouseMove, Button48.MouseMove, Button47.MouseMove, Button46.MouseMove, Button45.MouseMove, Button44.MouseMove, Button43.MouseMove, Button42.MouseMove, Button41.MouseMove, Button40.MouseMove, Button4.MouseMove, Button39.MouseMove, Button38.MouseMove, Button37.MouseMove, Button36.MouseMove, Button35.MouseMove, Button34.MouseMove, Button33.MouseMove, Button32.MouseMove, Button31.MouseMove, Button30.MouseMove, Button3.MouseMove, Button29.MouseMove, Button28.MouseMove, Button27.MouseMove, Button26.MouseMove, Button25.MouseMove, Button24.MouseMove, Button23.MouseMove, Button22.MouseMove, Button21.MouseMove, Button20.MouseMove, Button2.MouseMove, Button19.MouseMove, Button18.MouseMove, Button17.MouseMove, Button16.MouseMove, Button15.MouseMove, Button14.MouseMove, Button13.MouseMove, Button12.MouseMove, Button11.MouseMove, Button10.MouseMove, Button1.MouseMove
+    Private Sub Button_MouseMove(sender As Object, e As MouseEventArgs)
+        ' MOUSE MOVE EVENT
         Dim MyButton As Button = sender
         MyButton.Focus()
     End Sub
 
-    Private Sub Button_MouseUp(sender As Object, e As MouseEventArgs) Handles Button96.MouseUp, Button95.MouseUp, Button94.MouseUp, Button93.MouseUp, Button92.MouseUp, Button91.MouseUp, Button90.MouseUp, Button9.MouseUp, Button89.MouseUp, Button88.MouseUp, Button87.MouseUp, Button86.MouseUp, Button85.MouseUp, Button84.MouseUp, Button83.MouseUp, Button82.MouseUp, Button81.MouseUp, Button80.MouseUp, Button8.MouseUp, Button79.MouseUp, Button78.MouseUp, Button77.MouseUp, Button76.MouseUp, Button75.MouseUp, Button74.MouseUp, Button73.MouseUp, Button72.MouseUp, Button71.MouseUp, Button70.MouseUp, Button7.MouseUp, Button69.MouseUp, Button68.MouseUp, Button67.MouseUp, Button66.MouseUp, Button65.MouseUp, Button64.MouseUp, Button63.MouseUp, Button62.MouseUp, Button61.MouseUp, Button60.MouseUp, Button6.MouseUp, Button59.MouseUp, Button58.MouseUp, Button57.MouseUp, Button56.MouseUp, Button55.MouseUp, Button54.MouseUp, Button53.MouseUp, Button52.MouseUp, Button51.MouseUp, Button50.MouseUp, Button5.MouseUp, Button49.MouseUp, Button48.MouseUp, Button47.MouseUp, Button46.MouseUp, Button45.MouseUp, Button44.MouseUp, Button43.MouseUp, Button42.MouseUp, Button41.MouseUp, Button40.MouseUp, Button4.MouseUp, Button39.MouseUp, Button38.MouseUp, Button37.MouseUp, Button36.MouseUp, Button35.MouseUp, Button34.MouseUp, Button33.MouseUp, Button32.MouseUp, Button31.MouseUp, Button30.MouseUp, Button3.MouseUp, Button29.MouseUp, Button28.MouseUp, Button27.MouseUp, Button26.MouseUp, Button25.MouseUp, Button24.MouseUp, Button23.MouseUp, Button22.MouseUp, Button21.MouseUp, Button20.MouseUp, Button2.MouseUp, Button19.MouseUp, Button18.MouseUp, Button17.MouseUp, Button16.MouseUp, Button15.MouseUp, Button14.MouseUp, Button13.MouseUp, Button12.MouseUp, Button11.MouseUp, Button10.MouseUp, Button1.MouseUp
+    Private Sub Init_Button_Click_Event()
+        ' ADD ALL MINE BUTTON CLICK EVENT
+        For i As Integer = 0 To MineMapWidth - 1
+            For j As Integer = 0 To MineMapHeight - 1
+                AddHandler MyButtons(i, j).MouseUp, AddressOf Button_MouseUp
+            Next
+        Next
+    End Sub
+
+    Private Sub Button_MouseUp(sender As Object, e As MouseEventArgs)
         ' MOUSE CLICK EVENT(LEFT OF RIGHT)
-        Dim PosNow(,), XNow, YNow As Integer
+        Dim XNow, YNow As Integer
         Dim MyButton As Button
 
         ' get the current button with row and col number 
         MyButton = sender
-        PosNow = GetLocation(MyButton.Name)
-        XNow = PosNow(0, 0)
-        YNow = PosNow(0, 1)
+        XNow = MyButton.Name.Split("_")(1)
+        YNow = MyButton.Name.Split("_")(2)
 
         If FirstClick = False Then
             FirstClick = True
-            Init_Mine_Map(XNow, YNow)
+            Set_Mine_Map(XNow, YNow)
         End If
 
         'mouse left click
@@ -295,23 +378,6 @@
         End If
     End Sub
 
-    ' get location of the current button
-    Private Function GetLocation(ByRef CurrentName As String) As Integer(,)
-        Dim Position(0, 1) As Integer
-        Dim ButtonIndex As String = ""
-        For Each c As Char In CurrentName
-            If IsNumeric(c) Then
-                ButtonIndex &= c
-            End If
-        Next
-
-        Position(0, 0) = ((CInt(ButtonIndex) - 1) Mod MineMapWidth)
-        Position(0, 1) = (CInt(ButtonIndex) - 1) \ MineMapWidth
-        Return Position
-    End Function
-
-
-
     ' get empty islands
     Private Sub GetEmptyIsland()
         Dim i, j As Integer
@@ -339,6 +405,7 @@
         'check if the position is outside of the margin
         If i >= 0 And i <= MineMapWidth - 1 And j >= 0 And j <= MineMapHeight - 1 Then
             ReDim Preserve SingleIslandMap(1, IslandPointNum)
+            'assign the current location index into the current island(island marker or mine marker)
             SingleIslandMap(0, IslandPointNum) = i
             SingleIslandMap(1, IslandPointNum) = j
             IslandPointNum += 1
@@ -360,21 +427,33 @@
     ' show single island
     Private Sub ShowSingleIsland(ByVal i As Integer, ByVal j As Integer)
         Dim IslandIndex, XNow, YNow As Integer
-        Dim MyButton As Button
+
+        'review each island in the island map
         For Each pair As KeyValuePair(Of Integer, Integer(,)) In IslandMap
-            Dim n, m As Integer
-            For n = 0 To (pair.Value.Length / 2) - 1
+
+            'review each location in the current island
+            For n As Integer = 0 To (pair.Value.Length / 2) - 1
+
+                'check if current button belong to the current island
                 If pair.Value(0, n) = i And pair.Value(1, n) = j Then
+
+                    'if matches, confirm the current island index
                     IslandIndex = pair.Key
-                    For m = 0 To (pair.Value.Length / 2) - 1
+
+                    'review all location index of the current island
+                    For m As Integer = 0 To (pair.Value.Length / 2) - 1
                         XNow = IslandMap(IslandIndex)(0, m)
                         YNow = IslandMap(IslandIndex)(1, m)
-                        MyButton = GetButton(XNow, YNow)
+
                         If MineMap(XNow, YNow) = -9 Then
-                            MyButton.Text = ""
-                            MyButton.Enabled = False
+                            'display island space
+                            MyButtons(XNow, YNow).Text = ""
+                            MyButtons(XNow, YNow).Enabled = False
+
                         ElseIf MineMap(XNow, YNow) > 0 Then
-                            Set_Button_Mine_Marker(MyButton, MineMap(XNow, YNow))
+                            'display miner marker space around the island
+                            Set_Button_Mine_Marker(MyButtons(XNow, YNow),
+                                                   MineMap(XNow, YNow))
                         End If
 
                     Next
@@ -385,39 +464,45 @@
     End Sub
 
     ' reset all button
-    Private Sub InitAllButton()
-        Dim i, j As Integer
-        Dim MyButton As Button
-
+    Private Sub Reset_All_Button()
         'setup mine 
-        For i = 0 To MineMapWidth - 1
-            For j = 0 To MineMapHeight - 1
-                'locate current button
-                MyButton = GetButton(i, j)
-
+        For i As Integer = 0 To MineMapWidth - 1
+            For j As Integer = 0 To MineMapHeight - 1
                 'reset the button
-                MyButton.Text = ""
-                MyButton.Image = Nothing
-                MyButton.Enabled = True
+                MyButtons(i, j).Text = ""
+                MyButtons(i, j).Image = Nothing
+                MyButtons(i, j).Enabled = True
             Next
         Next
     End Sub
 
     Private Sub Set_Button_Mine_Marker(ByVal MyButton As Button, MarkerNum As Integer)
-        MyButton.Font = New Font(MyButton.Font, FontStyle.Bold)
-        MyButton.Text = CStr(MarkerNum)
+        'DISPLAY MINE NUMBER MARKER
 
+        'setup bold properties
+        MyButton.Font = New Font(MyButton.Font, FontStyle.Bold)
+
+        'setup text color
+        Dim MyColor As Color
+
+        'determine color based on the marker number
         Select Case MarkerNum
             Case 1
-                MyButton.ForeColor = Color.Blue
+                MyColor = Color.Blue
             Case 2
-                MyButton.ForeColor = Color.Green
+                MyColor = Color.Green
             Case 3
-                MyButton.ForeColor = Color.Red
+                MyColor = Color.Red
             Case 4
-                MyButton.ForeColor = Color.DarkBlue
+                MyColor = Color.DarkBlue
             Case Else
-                MyButton.ForeColor = Color.Chocolate
+                MyColor = Color.Chocolate
         End Select
+
+        'setup text color
+        MyButton.ForeColor = MyColor
+
+        'display text
+        MyButton.Text = CStr(MarkerNum)
     End Sub
 End Class

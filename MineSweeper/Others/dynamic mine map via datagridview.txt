@@ -1,0 +1,53 @@
+Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Dim ColNum, RowNum, CellSize As Integer
+        ColNum = 4
+        RowNum = 4
+        CellSize = 20
+
+        ' get grid size
+        DataGridView1.Width = ColNum * CellSize
+        DataGridView1.Height = RowNum * CellSize
+        DataGridView1.ColumnCount = ColNum
+        DataGridView1.RowCount = RowNum
+
+        ' set cell width and height
+        For Each col As DataGridViewColumn In DataGridView1.Columns
+            col.Width = CellSize
+        Next
+
+        ' set cell height
+        For Each row As DataGridViewRow In DataGridView1.Rows
+            row.Height = CellSize
+        Next
+
+        ' set other parameters 
+        DataGridView1.ColumnHeadersVisible = False 'hide headers
+        DataGridView1.RowHeadersVisible = False
+        DataGridView1.ScrollBars = 0 ' hide scroll bar
+        DataGridView1.ReadOnly = True ' read only
+        DataGridView1.AllowUserToResizeColumns = False ' fixed size
+        DataGridView1.AllowUserToResizeRows = False ' fixed size
+        DataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+
+
+        ' set form size
+        Dim FormWidth, FormHeight As Integer
+        FormWidth = DataGridView1.Width + 200
+        FormHeight = DataGridView1.Height + 200
+        Me.Size = New Size(FormWidth, FormHeight)
+        Me.CenterToScreen()
+
+        ' place the grid in the center
+        DataGridView1.Location = New Point((Me.Size.Width - DataGridView1.Width) / 2,
+                                           (Me.Size.Height - DataGridView1.Height) / 2)
+        'DataGridView1.Location = New Point(0, 200)
+    End Sub
+
+    Private Sub DataGridView1_CellClick(sender As Object, e As DataGridViewCellEventArgs) Handles DataGridView1.CellClick
+        ' Check if it's a valid cell click (not header)
+        If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 Then
+            ' Get the cell value
+            Dim Mycell As Object = DataGridView1.Rows(e.RowIndex).Cells(e.ColumnIndex)
+            Mycell.value = "s"
+        End If
+    End Sub
