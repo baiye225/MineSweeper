@@ -18,7 +18,7 @@
         ImageFileFailure = "face failure.jpeg"      'failure
 
         'setup mine parameters
-        MineNum = 15
+        MineNum = 5
         MineMapWidth = 8
         MineMapHeight = 10
 
